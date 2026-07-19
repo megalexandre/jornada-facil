@@ -80,6 +80,10 @@ app.*.map.json
 **/android/key.properties
 *.jks
 *.keystore
+# Config do Firebase (cliente Android) — fora do repo por decisão do time.
+# No CI é recriado a partir de um secret antes do `flutter build apk`.
+# Nome puro (sem barra) para casar em qualquer nível de forma confiável.
+google-services.json
 
 # Web
 
