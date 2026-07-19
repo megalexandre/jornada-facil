@@ -1,0 +1,81 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+# O app Flutter vive em app/ no monorepo; todos os passos `run` rodam lá.
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build do APK (debug)
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build apk --debug --dart-define-from-file=config/prod.json \
+            --dart-define=BUILD_SHA=${GITHUB_SHA::7} \
+            --dart-define=BUILD_TIME="$(date -u '+%Y-%m-%d %H:%M UTC')"
+
+      - name: Preparar artefato
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-debug.apk dist/jornadafacil-debug.apk
+
+      - name: Publicar Release "latest" (link de download estável)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Move a tag "latest" para o commit atual e substitui o APK
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest dist/jornadafacil-debug.apk \
+            --target "$GITHUB_SHA" \
+            --title "Build mais recente (${GITHUB_SHA:0:7})" \
+            --notes "APK debug gerado automaticamente do commit \`${GITHUB_SHA:0:7}\` em $(date -u '+%Y-%m-%d %H:%M UTC')."
+
+          DL_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/latest/jornadafacil-debug.apk"
+          {
+            echo "##  APK disponível para download"
+            echo ""
+            echo "**[Baixar jornadafacil-debug.apk]($DL_URL)**"
+            echo ""
+            echo "Commit: \`${GITHUB_SHA:0:7}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload como artifact (backup, 90 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: jornadafacil-debug-apk
+          # `path` de actions/* é relativo à raiz do workspace, não ao working-directory.
+          path: app/dist/jornadafacil-debug.apk
+          if-no-files-found: error

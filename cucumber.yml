@@ -1,0 +1,2 @@
+default: --strict --tags "not @wip" --publish-quiet --format pretty
+wip: --tags @wip --publish-quiet --format pretty

@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe ApplicationMailer do
+  it "is the app's ActionMailer base with the default sender and layout" do
+    expect(described_class.superclass).to eq(ActionMailer::Base)
+    expect(described_class.default[:from]).to eq("from@example.com")
+  end
+end

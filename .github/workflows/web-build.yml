@@ -1,0 +1,87 @@
+name: Build Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/web-build.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: build-web-${{ github.ref }}
+  cancel-in-progress: true
+
+# O app Flutter vive em app/ no monorepo; todos os passos `run` rodam lá.
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build web (release)
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build web --release --base-href / \
+            --dart-define-from-file=config/prod.json \
+            --dart-define=BUILD_SHA=${GITHUB_SHA::7} \
+            --dart-define=BUILD_TIME="$(date -u '+%Y-%m-%d %H:%M UTC')"
+
+      - name: SHA curto para a tag
+        id: vars
+        run: echo "sha_short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: alexandreqrz
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build e push da imagem web
+        uses: docker/build-push-action@v6
+        with:
+          # context de docker/* é relativo à raiz do workspace: aponta pro app/.
+          # (o Dockerfile de produção e o nginx.conf ficam em app/.)
+          context: ./app
+          push: true
+          tags: |
+            alexandreqrz/fttelecom-app:latest
+            alexandreqrz/fttelecom-app:${{ steps.vars.outputs.sha_short }}
+
+      - name: Resumo
+        run: |
+          {
+            echo "## Imagem web publicada"
+            echo ""
+            echo "- \`alexandreqrz/fttelecom-app:latest\`"
+            echo "- \`alexandreqrz/fttelecom-app:${{ steps.vars.outputs.sha_short }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Disparar deploy no Coolify
+        env:
+          COOLIFY_DEPLOY_URL: ${{ vars.COOLIFY_DEPLOY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "$COOLIFY_DEPLOY_URL" ] || [ -z "$COOLIFY_TOKEN" ]; then
+            echo "::error::Configure a variable COOLIFY_DEPLOY_URL e o secret COOLIFY_TOKEN no repositório."
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            --request GET "$COOLIFY_DEPLOY_URL" \
+            --header "Authorization: Bearer $COOLIFY_TOKEN"
+          echo "Deploy disparado no Coolify." >> "$GITHUB_STEP_SUMMARY"

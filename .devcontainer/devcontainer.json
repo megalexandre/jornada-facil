@@ -1,0 +1,38 @@
+{
+  // Dev container do monorepo Jornada Fácil.
+  // O VS Code anexa ao serviço `api` (que tem Ruby 3.4.10) com a RAIZ inteira
+  // montada em /workspaces/jornada — assim se edita api/, app/ e features/ num
+  // só workspace e roda rails/rspec/cucumber do terminal integrado.
+  "name": "jornada",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "api",
+  "workspaceFolder": "/workspaces/jornada",
+
+  // Sobe o web junto com a API ao abrir o dev container.
+  "runServices": ["db", "api", "web"],
+
+  // Portas: API (3000), Flutter web (8080), Postgres (5432).
+  "forwardPorts": [3000, 8080, 5432],
+  "portsAttributes": {
+    "3000": { "label": "API Rails" },
+    "8080": { "label": "Flutter Web" },
+    "5432": { "label": "Postgres" }
+  },
+
+  // Instala as gems da API e as da suíte BDD da raiz.
+  "postCreateCommand": "cd /workspaces/jornada/api && bundle install && cd /workspaces/jornada && bundle install",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Shopify.ruby-lsp",
+        "CucumberOpen.cucumber-official",
+        "Dart-Code.dart-code"
+      ],
+      "settings": {
+        "cucumber.features": ["features/**/*.feature"],
+        "cucumber.glue": ["features/step_definitions/**/*.rb"]
+      }
+    }
+  }
+}

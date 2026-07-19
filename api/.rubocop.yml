@@ -1,0 +1,18 @@
+# Omakase Ruby styling for Rails
+inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+
+# Overwrite or add rules to create your own house style
+#
+# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
+# Layout/SpaceInsideArrayLiteralBrackets:
+#   Enabled: false
+
+# Require `# frozen_string_literal: true` at the top of every Ruby file.
+# (rubocop-rails-omakase disables this cop by default.)
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+# Require a blank line after the magic comment.
+Layout/EmptyLineAfterMagicComment:
+  Enabled: true

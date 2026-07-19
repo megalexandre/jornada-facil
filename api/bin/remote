@@ -1,0 +1,30 @@
+#!/bin/bash -e
+# Roda comandos Rails locais apontando pro banco REMOTO (servidor Coolify).
+#
+# Uso:
+#   bin/remote console                 # console conectado no banco do servidor
+#   bin/remote dbconsole               # psql direto no banco do servidor
+#   bin/remote runner "puts User.count"
+#   bin/remote db:migrate:status
+#
+# Credenciais vêm de .env.remote (não versionado). O ambiente Rails continua
+# sendo development — só o banco muda. Nada é alterado no dev local normal.
+
+cd "$(dirname "$0")/.."
+
+ENV_FILE=".env.remote"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "❌ $ENV_FILE não encontrado. Rode: cp .env.remote.example .env.remote e preencha." >&2
+  exit 1
+fi
+
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+echo "⚠️  Banco REMOTO -> ${DATABASE_USER}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME:-api_development}"
+echo "   (ambiente Rails: development, apontado pro servidor)"
+echo
+
+exec bin/rails "$@"

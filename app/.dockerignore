@@ -1,0 +1,8 @@
+*
+!nginx.conf
+!Dockerfile
+!docker
+!docker/40-generate-config.sh
+!build
+build/*
+!build/web

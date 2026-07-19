@@ -1,0 +1,96 @@
+name: jornada
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: api_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    command: >
+      bash -lc "(bundle check || bundle install) &&
+      bin/rails db:migrate &&
+      bin/rails db:seed &&
+      bin/rails server -b 0.0.0.0 -p 3000"
+    working_dir: /workspaces/jornada/api
+    volumes:
+      - .:/workspaces/jornada:cached   # raiz inteira (o devcontainer edita tudo)
+      - bundle:/usr/local/bundle       # gems isoladas do host
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      DATABASE_USER: postgres
+      API_DATABASE_PASSWORD: postgres
+      DATABASE_NAME: api_development
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    command: >
+      bash -c "flutter pub get &&
+      flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080
+      --dart-define APP_ENV=development
+      --dart-define API_BASE_URL=http://localhost:3000"
+    working_dir: /app
+    volumes:
+      - ./app:/app:cached
+      - pub_cache:/root/.pub-cache
+      - dart_tool:/app/.dart_tool
+      - app_build:/app/build
+    ports:
+      - "8080:8080"
+    stdin_open: true   # permite apertar "R" no terminal para hot-restart
+    tty: true
+    depends_on:
+      - api
+
+  # ---------------------------------------------------------------------------
+  # Suíte BDD da raiz (Cucumber em Ruby, caixa-preta sobre a API por HTTP).
+  # Sobe só sob demanda (profile `bdd`); dentro da rede a API é `http://api:3000`.
+  # ---------------------------------------------------------------------------
+  tests:
+    image: ruby:3.4.10-slim
+    profiles: ["bdd"]
+    command: >
+      bash -lc "apt-get update -qq &&
+      apt-get install -y --no-install-recommends build-essential git >/dev/null &&
+      (bundle check || bundle install) &&
+      bundle exec cucumber"
+    working_dir: /workspaces/jornada
+    volumes:
+      - .:/workspaces/jornada:cached
+      - bdd_bundle:/usr/local/bundle
+    environment:
+      API_BASE_URL: http://api:3000
+      API_HOST_HEADER: localhost   # Rails 8 dev só aceita localhost/IP no Host
+    depends_on:
+      - api
+
+volumes:
+  pg_data:
+  bundle:
+  pub_cache:
+  dart_tool:
+  app_build:
+  bdd_bundle:

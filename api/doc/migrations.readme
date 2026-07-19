@@ -1,0 +1,7 @@
+
+rails db:create
+rails db:migrate
+rails db:rollback
+
+RAILS_ENV=test rails db:create db:migrate
+RAILS_ENV=test rails db:rollback
