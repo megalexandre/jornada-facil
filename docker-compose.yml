@@ -4,15 +4,16 @@ services:
   db:
     image: postgis/postgis:16-3.4
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: api_development
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${API_DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${DATABASE_NAME:-api_development}
     ports:
-      - "5432:5432"
+      # lado do host configurável; dentro da rede o Postgres escuta sempre em 5432
+      - "${DATABASE_PORT:-5432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -25,20 +26,22 @@ services:
       bash -lc "(bundle check || bundle install) &&
       bin/rails db:migrate &&
       bin/rails db:seed &&
-      bin/rails server -b 0.0.0.0 -p 3000"
+      bin/rails server -b 0.0.0.0 -p ${RAILS_PORT:-3000}"
     working_dir: /workspaces/jornada/api
     volumes:
       - .:/workspaces/jornada:cached   # raiz inteira (o devcontainer edita tudo)
       - bundle:/usr/local/bundle       # gems isoladas do host
+      - pub_cache:/root/.pub-cache     # cache de pacotes Flutter (compartilhado com o serviço web)
     environment:
-      RAILS_ENV: development
-      DATABASE_HOST: db
+      RAILS_ENV: ${RAILS_ENV:-development}
+      DATABASE_HOST: ${DATABASE_HOST:-db}
+      # porta interna do Postgres na rede do compose (não a publicada no host)
       DATABASE_PORT: "5432"
-      DATABASE_USER: postgres
-      API_DATABASE_PASSWORD: postgres
-      DATABASE_NAME: api_development
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      API_DATABASE_PASSWORD: ${API_DATABASE_PASSWORD:-postgres}
+      DATABASE_NAME: ${DATABASE_NAME:-api_development}
     ports:
-      - "3000:3000"
+      - "${RAILS_PORT:-3000}:${RAILS_PORT:-3000}"
     depends_on:
       db:
         condition: service_healthy
@@ -49,9 +52,9 @@ services:
       dockerfile: Dockerfile.dev
     command: >
       bash -c "flutter pub get &&
-      flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080
+      flutter run -d web-server --web-hostname 0.0.0.0 --web-port ${WEB_PORT:-8080}
       --dart-define APP_ENV=development
-      --dart-define API_BASE_URL=http://localhost:3000"
+      --dart-define API_BASE_URL=${WEB_API_BASE_URL:-http://localhost:3000}"
     working_dir: /app
     volumes:
       - ./app:/app:cached
@@ -59,7 +62,7 @@ services:
       - dart_tool:/app/.dart_tool
       - app_build:/app/build
     ports:
-      - "8080:8080"
+      - "${WEB_PORT:-8080}:${WEB_PORT:-8080}"
     stdin_open: true   # permite apertar "R" no terminal para hot-restart
     tty: true
     depends_on:
@@ -82,8 +85,8 @@ services:
       - .:/workspaces/jornada:cached
       - bdd_bundle:/usr/local/bundle
     environment:
-      API_BASE_URL: http://api:3000
-      API_HOST_HEADER: localhost   # Rails 8 dev só aceita localhost/IP no Host
+      API_BASE_URL: ${API_BASE_URL:-http://api:3000}
+      API_HOST_HEADER: ${API_HOST_HEADER:-localhost}   # Rails 8 dev só aceita localhost/IP no Host
     depends_on:
       - api
 

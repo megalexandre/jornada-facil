@@ -1,17 +1,11 @@
 {
-  // Dev container do monorepo Jornada Fácil.
-  // O VS Code anexa ao serviço `api` (que tem Ruby 3.4.10) com a RAIZ inteira
-  // montada em /workspaces/jornada — assim se edita api/, app/ e features/ num
-  // só workspace e roda rails/rspec/cucumber do terminal integrado.
   "name": "jornada",
   "dockerComposeFile": ["../docker-compose.yml"],
   "service": "api",
   "workspaceFolder": "/workspaces/jornada",
 
-  // Sobe o web junto com a API ao abrir o dev container.
   "runServices": ["db", "api", "web"],
 
-  // Portas: API (3000), Flutter web (8080), Postgres (5432).
   "forwardPorts": [3000, 8080, 5432],
   "portsAttributes": {
     "3000": { "label": "API Rails" },
@@ -19,15 +13,31 @@
     "5432": { "label": "Postgres" }
   },
 
-  // Instala as gems da API e as da suíte BDD da raiz.
-  "postCreateCommand": "cd /workspaces/jornada/api && bundle install && cd /workspaces/jornada && bundle install",
+  "postCreateCommand": "cd /workspaces/jornada/api && bundle install && cd /workspaces/jornada && bundle install && cd /workspaces/jornada/app && flutter pub get",
+
+  "features": {
+    // Node é pré-requisito do claude-code: no Debian trixie do ruby:slim o
+    // instalador automático da feature falha (nodejs do Debian vem sem npm).
+    // A feature do claude-code declara installsAfter node, então a ordem é garantida.
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+
+  "mounts": [
+    "source=claude-code-config-${devcontainerId},target=/root/.claude,type=volume"
+  ],
 
   "customizations": {
     "vscode": {
       "extensions": [
         "Shopify.ruby-lsp",
-        "CucumberOpen.cucumber-official",
-        "Dart-Code.dart-code"
+        "KoichiSasada.vscode-rdbg",
+        "Dart-Code.flutter",
+        "ms-ossdata.vscode-pgsql",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions",
+        "redhat.vscode-yaml",
+        "CucumberOpen.cucumber-official"
       ],
       "settings": {
         "cucumber.features": ["features/**/*.feature"],

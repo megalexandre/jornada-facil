@@ -10,15 +10,41 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim
 
 # Libs de build/runtime: pg + activerecord-postgis-adapter (libpq-dev),
 # active_storage/image_processing (libvips), psych (libyaml-dev), bootsnap etc.
+# unzip/xz-utils/ca-certificates são para o SDK do Flutter (abaixo).
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
       build-essential git curl \
       libpq-dev postgresql-client \
-      libvips libyaml-dev pkg-config && \
+      libvips libyaml-dev pkg-config \
+      unzip xz-utils ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 ENV BUNDLE_PATH=/usr/local/bundle \
     LANG=C.UTF-8
+
+# SDK do Flutter: o devcontainer (.devcontainer/devcontainer.json) anexa o VS Code
+# só no serviço `api` — então é AQUI, e não na imagem do serviço `web`, que a
+# extensão Dart/Flutter precisa achar o SDK. Mesma receita do app/Dockerfile.dev:
+# clona o canal stable ao vivo, porque a mirror ghcr.io/cirruslabs/flutter trava
+# numa versão de Dart abaixo do `sdk: ^3.12.2` do pubspec.
+ARG FLUTTER_CHANNEL=stable
+RUN git clone --depth 1 -b "$FLUTTER_CHANNEL" https://github.com/flutter/flutter.git /opt/flutter && \
+    git config --global --add safe.directory /opt/flutter
+ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH"
+
+# O `ENV PATH` acima não basta: o Dev Containers do VS Code sonda o ambiente
+# com um shell de LOGIN (userEnvProbe padrão = loginInteractiveShell) para
+# descobrir o PATH usado ao lançar as extensões (Ruby LSP, Dart/Flutter). E o
+# /etc/profile desta imagem (Debian) SOBRESCREVE o PATH para root com uma lista
+# fixa antes de rodar /etc/profile.d/*.sh — apagando o /opt/flutter daqui. Um
+# script em profile.d roda depois desse reset e devolve o Flutter ao PATH
+# também em shells de login.
+RUN echo 'export PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH"' > /etc/profile.d/flutter-path.sh
+
+RUN flutter config --no-analytics && \
+    flutter config --enable-web && \
+    flutter precache --web && \
+    flutter --version
 
 # O compose monta a raiz do monorepo aqui; o working_dir efetivo é a subpasta api/.
 WORKDIR /workspaces/jornada/api
