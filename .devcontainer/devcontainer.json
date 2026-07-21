@@ -4,7 +4,7 @@
   "service": "api",
   "workspaceFolder": "/workspaces/jornada",
 
-  "runServices": ["db", "api", "web"],
+  "runServices": ["db", "api"],
 
   "forwardPorts": [3000, 8080, 5432],
   "portsAttributes": {
@@ -13,12 +13,9 @@
     "5432": { "label": "Postgres" }
   },
 
-  "postCreateCommand": "cd /workspaces/jornada/api && bundle install && cd /workspaces/jornada && bundle install && cd /workspaces/jornada/app && flutter pub get",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
 
   "features": {
-    // Node é pré-requisito do claude-code: no Debian trixie do ruby:slim o
-    // instalador automático da feature falha (nodejs do Debian vem sem npm).
-    // A feature do claude-code declara installsAfter node, então a ordem é garantida.
     "ghcr.io/devcontainers/features/node:1": {},
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
@@ -41,7 +38,9 @@
       ],
       "settings": {
         "cucumber.features": ["features/**/*.feature"],
-        "cucumber.glue": ["features/step_definitions/**/*.rb"]
+        "cucumber.glue": ["features/step_definitions/**/*.rb"],
+        "rubyLsp.bundleGemfile": "api/Gemfile",
+        "dart.flutterSdkPath": "/opt/flutter"
       }
     }
   }

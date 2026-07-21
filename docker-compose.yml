@@ -22,16 +22,19 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile.dev
+    # O servidor Rails NÃO sobe aqui: o container só prepara o banco e fica vivo
+    # (sleep infinity). O dev inicia o server pela task "Rails: server" do VS Code
+    # (ou `make rails`), com os logs num terminal próprio. Ver AGENTS.md.
     command: >
       bash -lc "(bundle check || bundle install) &&
       bin/rails db:migrate &&
       bin/rails db:seed &&
-      bin/rails server -b 0.0.0.0 -p ${RAILS_PORT:-3000}"
+      sleep infinity"
     working_dir: /workspaces/jornada/api
     volumes:
       - .:/workspaces/jornada:cached   # raiz inteira (o devcontainer edita tudo)
       - bundle:/usr/local/bundle       # gems isoladas do host
-      - pub_cache:/root/.pub-cache     # cache de pacotes Flutter (compartilhado com o serviço web)
+      - pub_cache:/root/.pub-cache     # cache de pacotes Flutter (o app roda neste container, via F5)
     environment:
       RAILS_ENV: ${RAILS_ENV:-development}
       DATABASE_HOST: ${DATABASE_HOST:-db}
@@ -45,28 +48,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-
-  web:
-    build:
-      context: ./app
-      dockerfile: Dockerfile.dev
-    command: >
-      bash -c "flutter pub get &&
-      flutter run -d web-server --web-hostname 0.0.0.0 --web-port ${WEB_PORT:-8080}
-      --dart-define APP_ENV=development
-      --dart-define API_BASE_URL=${WEB_API_BASE_URL:-http://localhost:3000}"
-    working_dir: /app
-    volumes:
-      - ./app:/app:cached
-      - pub_cache:/root/.pub-cache
-      - dart_tool:/app/.dart_tool
-      - app_build:/app/build
-    ports:
-      - "${WEB_PORT:-8080}:${WEB_PORT:-8080}"
-    stdin_open: true   # permite apertar "R" no terminal para hot-restart
-    tty: true
-    depends_on:
-      - api
 
   # ---------------------------------------------------------------------------
   # Suíte BDD da raiz (Cucumber em Ruby, caixa-preta sobre a API por HTTP).
@@ -94,6 +75,4 @@ volumes:
   pg_data:
   bundle:
   pub_cache:
-  dart_tool:
-  app_build:
   bdd_bundle:

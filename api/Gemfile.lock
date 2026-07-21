@@ -456,6 +456,7 @@ DEPENDENCIES
   rails (~> 8.1.3)
   rspec-rails
   rubocop-rails-omakase
+  ruby-lsp
   ruby-lsp-rails
   shoulda-matchers
   simplecov

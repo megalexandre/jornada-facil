@@ -30,6 +30,11 @@ Rails.application.configure do
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false
 
+  # Request specs (ActionDispatch::Integration) hit "www.example.com" by default;
+  # without this, ActionDispatch::HostAuthorization blocks every request with a
+  # 403 Blocked Host page before it reaches the controller.
+  config.hosts.clear
+
   # Store uploaded files on the local file system in a temporary directory.
   config.active_storage.service = :test
 

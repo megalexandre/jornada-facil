@@ -8,11 +8,9 @@ import 'package:jornadafacil/features/admin/presentation/weekly_review_detail_pa
 import 'package:jornadafacil/features/admin/presentation/widgets/compliance_card.dart';
 import 'package:jornadafacil/features/admin/presentation/widgets/week_header.dart';
 import 'package:jornadafacil/features/admin/presentation/widgets/weekly_user_tile.dart';
+import 'package:jornadafacil/shared/utils/responsive.dart';
 import 'package:jornadafacil/shared/utils/week_utils.dart';
 
-/// Aba de administração: revisão semanal das jornadas de todos os usuários.
-/// Visível apenas para quem tem users:view (filtro no MainScaffold); os
-/// dados exigem weekly_review:view na API.
 class WeeklyReviewPage extends StatefulWidget {
   const WeeklyReviewPage({super.key});
 
@@ -51,8 +49,9 @@ class _WeeklyReviewPageState extends State<WeeklyReviewPage> {
     });
 
     try {
-      final summary =
-          await _adminService.getWeeklyReview(weekStart: _isoDate(_weekStart));
+      final summary = await _adminService.getWeeklyReview(
+        weekStart: _isoDate(_weekStart),
+      );
       if (!mounted) return;
       setState(() {
         _summary = summary;
@@ -88,40 +87,47 @@ class _WeeklyReviewPageState extends State<WeeklyReviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Revisão Semanal',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+    // Limita a largura num desktop/web: sem isso o cabeçalho, a barra de semana
+    // e a lista esticariam pela janela inteira. Num celular o maxWidth não restringe.
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: Breakpoints.expanded),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Revisão Semanal',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Jornadas da equipe na semana',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Jornadas da equipe na semana',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            WeekHeader(
+              weekStart: _weekStart,
+              canGoNext: _canGoNext,
+              onPrevious: () => _changeWeek(-7),
+              onNext: () => _changeWeek(7),
+            ),
+            Expanded(child: _buildContent()),
+          ],
         ),
-        WeekHeader(
-          weekStart: _weekStart,
-          canGoNext: _canGoNext,
-          onPrevious: () => _changeWeek(-7),
-          onNext: () => _changeWeek(7),
-        ),
-        Expanded(child: _buildContent()),
-      ],
+      ),
     );
   }
 
@@ -137,10 +143,7 @@ class _WeeklyReviewPageState extends State<WeeklyReviewPage> {
           children: [
             Text(_error!, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            TextButton(
-              onPressed: _load,
-              child: const Text('Tentar novamente'),
-            ),
+            TextButton(onPressed: _load, child: const Text('Tentar novamente')),
           ],
         ),
       );

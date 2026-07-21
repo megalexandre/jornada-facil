@@ -1,0 +1,25 @@
+{
+  // Sobe o app Flutter web dentro do próprio devcontainer (serviço `api`, que
+  // tem o SDK em /opt/flutter). Antes o app rodava no serviço `web` do compose,
+  // cujo `flutter run` ficava inalcançável para hot reload — ver AGENTS.md.
+  //
+  // F5 → "Flutter Web (dev)": serve na 8080 (encaminhada) e dá hot reload ao
+  // salvar, DevTools e inspector pela extensão Dart/Flutter. Abra localhost:8080.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter Web (dev)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "app",
+      "deviceId": "web-server",
+      "toolArgs": [
+        "--web-hostname",
+        "0.0.0.0",
+        "--web-port",
+        "8080",
+        "--dart-define-from-file=config/dev.json"
+      ]
+    }
+  ]
+}

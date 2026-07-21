@@ -70,6 +70,7 @@ group :development, :test do
 end
 
 group :development do
+  gem "ruby-lsp", require: false
   # Rails-aware features for the Ruby LSP editor extension: go-to-definition
   # across models/controllers, associations, callbacks, routes, etc.
   gem "ruby-lsp-rails", require: false

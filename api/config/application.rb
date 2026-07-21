@@ -31,13 +31,16 @@ module Api
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
-    # Only dump the app's own `public` schema. The PostGIS image auto-installs
-    # `postgis_tiger_geocoder`, which adds `tiger`/`topology` to the search path;
-    # with the default (`:schema_search_path`) their extension-owned tables leak
-    # into db/schema.rb and make it un-loadable (create_table ... force: :cascade
-    # can't drop tables owned by an extension). Restricting to "public" keeps only
-    # our tables; the `enable_extension` lines remain, so the extension recreates
-    # its own tables on load without conflict.
-    config.active_record.dump_schemas = "public"
+    # SQL dump (db/structure.sql) instead of the Ruby schema.rb: PostGIS extensions
+    # like `postgis_tiger_geocoder`/`postgis_topology` need their own schemas
+    # (`tiger`/`topology`) created before `CREATE EXTENSION ... SCHEMA x` — Postgres
+    # doesn't create that schema itself, and schema.rb's `enable_extension` has no
+    # way to emit the `CREATE SCHEMA` for it. pg_dump does, so a fresh database
+    # (api_test, CI, another dev's machine) loads correctly from structure.sql
+    # without depending on the postgis/postgis image's one-time bootstrap of
+    # POSTGRES_DB. Dump every schema (not just "public") so those extension
+    # schemas make it into the file.
+    config.active_record.schema_format = :sql
+    config.active_record.dump_schemas = :all
   end
 end

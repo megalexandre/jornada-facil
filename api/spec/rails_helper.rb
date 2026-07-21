@@ -2,7 +2,12 @@
 
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
-ENV['RAILS_ENV'] ||= 'test'
+# Force, don't fall back: the devcontainer's `api` service sets RAILS_ENV=development
+# at the container level (docker-compose.yml `environment:`, so `bin/rails server` has
+# it without repeating it in the command) and that leaks into every shell/exec in the
+# container, including plain terminals. `||=` would then never assign "test" and the
+# suite would silently run against the development database.
+ENV['RAILS_ENV'] = 'test'
 require_relative '../config/environment'
 # Prevent database truncation if the environment is production
 abort("The Rails environment is running in production mode!") if Rails.env.production?

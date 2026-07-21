@@ -1,5 +1,7 @@
 # language: pt
-Funcionalidade: Registro de ponto (jornada)
+
+Funcionalidade: Registro de ponto
+
   Regras de abertura e fechamento de jornada.
 
   Cenário: Administrador não registra jornada
