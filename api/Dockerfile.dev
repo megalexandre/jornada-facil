@@ -27,7 +27,8 @@ RUN apt-get update -qq && \
       build-essential git \
       libpq-dev postgresql-client-16 \
       libvips libyaml-dev pkg-config \
-      unzip xz-utils && \
+      unzip xz-utils \
+      openssh-client && \
     rm -rf /var/lib/apt/lists/*
 
 ENV BUNDLE_PATH=/usr/local/bundle \
