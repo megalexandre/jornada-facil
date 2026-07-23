@@ -15,7 +15,6 @@ concurrency:
   group: build-apk-${{ github.ref }}
   cancel-in-progress: true
 
-# O app Flutter vive em app/ no monorepo; todos os passos `run` rodam lá.
 defaults:
   run:
     working-directory: app
@@ -39,21 +38,23 @@ jobs:
           channel: stable
           cache: true
 
-      # google-services.json é gitignorado (credencial FCM, ver AGENTS.md), mas o
-      # plugin com.google.gms.google-services exige o arquivo no build. Restaura
-      # a partir do secret antes do Gradle rodar.
       - name: Restaurar google-services.json (Firebase)
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           if [ -z "$GOOGLE_SERVICES_JSON" ]; then
-            echo "::error::Configure o secret GOOGLE_SERVICES_JSON com o conteúdo de app/android/app/google-services.json em base64."
+            echo "::error::Configure o secret GOOGLE_SERVICES_JSON com o conteúdo de app/android/app/google-services.json (JSON puro ou base64)."
             exit 1
           fi
-          echo "$GOOGLE_SERVICES_JSON" | base64 -d > android/app/google-services.json
-          # Falha cedo e com mensagem clara se o secret não for um JSON válido.
-          python3 -c "import json,sys; json.load(open('android/app/google-services.json'))" \
-            || { echo "::error::GOOGLE_SERVICES_JSON não decodificou para um JSON válido (o valor do secret deve ser base64)."; exit 1; }
+          dest=android/app/google-services.json
+          case "$(printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '[:space:]' | cut -c1)" in
+            '{') printf '%s' "$GOOGLE_SERVICES_JSON" > "$dest" ;;
+            *)   printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '[:space:]' | base64 -d > "$dest" \
+                   || { echo "::error::GOOGLE_SERVICES_JSON não é JSON puro nem base64 válido."; exit 1; } ;;
+          esac
+          python3 -c "import json; json.load(open('$dest'))" \
+            || { echo "::error::O conteúdo de GOOGLE_SERVICES_JSON não é um JSON válido."; exit 1; }
+          echo "google-services.json restaurado ($(wc -c < "$dest") bytes)."
 
       - name: Build do APK (debug)
         run: |
@@ -72,7 +73,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Move a tag "latest" para o commit atual e substitui o APK
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest dist/jornadafacil-debug.apk \
             --target "$GITHUB_SHA" \
@@ -92,6 +92,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jornadafacil-debug-apk
-          # `path` de actions/* é relativo à raiz do workspace, não ao working-directory.
           path: app/dist/jornadafacil-debug.apk
           if-no-files-found: error
