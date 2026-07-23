@@ -9,6 +9,7 @@ import 'package:jornadafacil/features/register/presentation/widgets/journey_butt
 import 'package:jornadafacil/features/register/presentation/widgets/journey_turns_table.dart';
 import 'package:jornadafacil/shared/widgets/cards/local_date_time_card.dart';
 import 'package:jornadafacil/shared/utils/date_format_helper.dart';
+import 'package:jornadafacil/shared/utils/responsive.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -81,10 +82,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   /// Jornadas de hoje, da mais antiga para a mais recente (1º Turno primeiro).
   List<JourneyModel> get _todayJourneys {
-    final today = _journeys
-        .where((journey) => _isToday(journey.startedAt.toLocal()))
-        .toList()
-      ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
+    final today =
+        _journeys
+            .where((journey) => _isToday(journey.startedAt.toLocal()))
+            .toList()
+          ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
     return today;
   }
 
@@ -128,8 +130,6 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     } on ApiException catch (e) {
       _showError(e.message);
-      // Estado local pode ter divergido do servidor (ex.: jornada já aberta
-      // em outro dispositivo) — re-sincroniza.
       await _syncWithServer();
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -149,34 +149,46 @@ class _RegisterPageState extends State<RegisterPage> {
       listenable: context.appState,
       builder: (context, _) {
         return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  DateFormatHelper.formatDate(DateTime.now()),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          // Numa janela larga (web/desktop) o conteúdo pararia de esticar até a
+          // borda: limita a 840 e centraliza, com margem lateral por breakpoint.
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 840),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.horizontalMargin,
+                  vertical: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormatHelper.formatDate(DateTime.now()),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
+                    ),
+                    const SizedBox(height: 24),
+                    const LocalDateTimeCard(),
+                    const SizedBox(height: 24),
+
+                    if (context.appState.currentUser.can(
+                      '${rbac.Resources.journey}:${rbac.Actions.view}',
+                    )) ...[
+                      JourneyButton(
+                        entryTime: _entryTime,
+                        exitTime: _exitTime,
+                        onTap: _handleWorkSessionTap,
+                        isInsideGeofence: context.appState.isInsideGeofence,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    JourneyTurnsTable(journeys: _todayJourneys),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                const LocalDateTimeCard(),
-                const SizedBox(height: 24),
-
-                if (context.appState.currentUser.can('${rbac.Resources.journey}:${rbac.Actions.view}')) ...[
-                  JourneyButton(
-                    entryTime: _entryTime,
-                    exitTime: _exitTime,
-                    onTap: _handleWorkSessionTap,
-                    isInsideGeofence: context.appState.isInsideGeofence,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-
-                JourneyTurnsTable(journeys: _todayJourneys),
-              ],
+              ),
             ),
           ),
         );

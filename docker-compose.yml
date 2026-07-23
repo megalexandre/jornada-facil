@@ -8,7 +8,6 @@ services:
       POSTGRES_PASSWORD: ${API_DATABASE_PASSWORD:-postgres}
       POSTGRES_DB: ${DATABASE_NAME:-api_development}
     ports:
-      # lado do host configurável; dentro da rede o Postgres escuta sempre em 5432
       - "${DATABASE_PORT:-5432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
@@ -22,9 +21,6 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile.dev
-    # O servidor Rails NÃO sobe aqui: o container só prepara o banco e fica vivo
-    # (sleep infinity). O dev inicia o server pela task "Rails: server" do VS Code
-    # (ou `make rails`), com os logs num terminal próprio. Ver AGENTS.md.
     command: >
       bash -lc "(bundle check || bundle install) &&
       bin/rails db:migrate &&
@@ -32,13 +28,13 @@ services:
       sleep infinity"
     working_dir: /workspaces/jornada/api
     volumes:
-      - .:/workspaces/jornada:cached   # raiz inteira (o devcontainer edita tudo)
-      - bundle:/usr/local/bundle       # gems isoladas do host
-      - pub_cache:/root/.pub-cache     # cache de pacotes Flutter (o app roda neste container, via F5)
+      - .:/workspaces/jornada:cached
+      - bundle:/usr/local/bundle 
+      - pub_cache:/root/.pub-cache
     environment:
       RAILS_ENV: ${RAILS_ENV:-development}
+      BINDING: 0.0.0.0
       DATABASE_HOST: ${DATABASE_HOST:-db}
-      # porta interna do Postgres na rede do compose (não a publicada no host)
       DATABASE_PORT: "5432"
       DATABASE_USER: ${DATABASE_USER:-postgres}
       API_DATABASE_PASSWORD: ${API_DATABASE_PASSWORD:-postgres}
@@ -67,7 +63,7 @@ services:
       - bdd_bundle:/usr/local/bundle
     environment:
       API_BASE_URL: ${API_BASE_URL:-http://api:3000}
-      API_HOST_HEADER: ${API_HOST_HEADER:-localhost}   # Rails 8 dev só aceita localhost/IP no Host
+      API_HOST_HEADER: ${API_HOST_HEADER:-localhost}   
     depends_on:
       - api
 

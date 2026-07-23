@@ -12,9 +12,7 @@ Funcionalidade: Registro de ponto
 
   @wip
   Cenário: Funcionário abre e finaliza o ponto
-    # Requer um usuário com tracks_journey=true semeado no banco (ex.: "funcionario").
-    # Semeie-o em api/db/seeds.rb e remova a tag @wip para ligar este cenário.
-    Dado que estou autenticado como "funcionario" com senha "Password123!"
+    Dado que estou autenticado como "usuario" com senha "Senha123!"
     Quando abro uma jornada em latitude -23.5 e longitude -46.6
     Então a resposta tem status 201
     E a jornada está aberta

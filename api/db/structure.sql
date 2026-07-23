@@ -528,7 +528,7 @@ ALTER TABLE ONLY public.device_tokens
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO "$user", public, topology, tiger;
+SET search_path TO "$user", public, tiger, topology;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20260721120000'),

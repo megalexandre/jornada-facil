@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Geofence circular: ponto central + raio em metros.
 class _CircleGeofence {
   final LatLng center;
   final double radiusMeters;
@@ -11,7 +10,6 @@ class _CircleGeofence {
   const _CircleGeofence(this.center, this.radiusMeters);
 }
 
-/// Geofence poligonal: lista de vértices (anel externo do GeoJSON).
 class _PolygonGeofence {
   final List<LatLng> vertices;
   final LatLng centroid;
@@ -26,10 +24,7 @@ class _PolygonGeofence {
 }
 
 class GeofenceService {
-  /// Chave de desenvolvimento: com `false`, a validação geográfica é
-  /// desativada e [isPointInPolygon] retorna sempre `true` (registro de
-  /// ponto liberado em qualquer lugar).
-  static const bool validateGeofence = false;
+  static const bool validateGeofence = true;
 
   static final GeofenceService _instance = GeofenceService._internal();
 
@@ -43,8 +38,7 @@ class GeofenceService {
   static const double _radiusMeters = 20.0;
 
   static const List<String> _geofenceAssets = [
-    'assets/casa_denise.geojson',
-    'assets/casa_alexandre.geojson',
+    'assets/geofence.geojson',
   ];
 
   Future<void> loadGeofence() async {
@@ -111,8 +105,6 @@ class GeofenceService {
     }
   }
 
-  /// Ray casting: conta quantas arestas o raio horizontal a partir do ponto
-  /// cruza; ímpar = dentro.
   bool _isInsidePolygon(double lat, double lng, List<LatLng> vertices) {
     var inside = false;
     for (var i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {

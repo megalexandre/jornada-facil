@@ -7,6 +7,7 @@ import 'package:jornadafacil/core/services/location_service.dart';
 import 'package:jornadafacil/shared/widgets/layouts/app_bar_custom.dart';
 import 'package:jornadafacil/shared/widgets/layouts/user_drawer.dart';
 import 'package:jornadafacil/features/admin/presentation/weekly_review_page.dart';
+import 'package:jornadafacil/features/dashboard/presentation/dashboard_page.dart';
 import 'package:jornadafacil/features/history/presentation/history_page.dart';
 import 'package:jornadafacil/features/register/presentation/register_page.dart';
 
@@ -44,6 +45,14 @@ class _MainScaffoldState extends State<MainScaffold> {
   // Registro/Histórico; o admin (users:view, não bate ponto) cai direto na
   // Revisão da equipe, que é a primeira aba que sobra pra ele.
   final List<_Tab> _allTabs = [
+    // Primeira aba do perfil admin (mesmo gate da Revisão: users:view, que
+    // quem bate ponto não tem). Vazia por enquanto.
+    _Tab(
+      page: const DashboardPage(),
+      icon: Icons.dashboard_outlined,
+      label: 'Dashboard',
+      permission: '${rbac.Resources.users}:${rbac.Actions.view}',
+    ),
     _Tab(
       page: const WeeklyReviewPage(),
       icon: Icons.fact_check_outlined,
@@ -76,8 +85,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   Future<void> _requestLocationPermission() async {
-    final hasPermission =
-        await LocationService().checkAndRequestPermission();
+    final hasPermission = await LocationService().checkAndRequestPermission();
 
     if (!hasPermission && mounted) {
       _showPermissionDeniedDialog();
@@ -107,7 +115,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         ],
       ),
     );
-  }  
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,10 +172,12 @@ class _MainScaffoldState extends State<MainScaffold> {
                         });
                       },
                       destinations: allowedTabs
-                          .map((tab) => NavigationDestination(
-                                icon: Icon(tab.icon),
-                                label: tab.label,
-                              ))
+                          .map(
+                            (tab) => NavigationDestination(
+                              icon: Icon(tab.icon),
+                              label: tab.label,
+                            ),
+                          )
                           .toList(),
                     ),
                   ),

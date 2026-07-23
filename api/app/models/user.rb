@@ -12,7 +12,7 @@ class User < ApplicationRecord
 
   validates :username, presence: true, uniqueness: true
   validates :email, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :password, presence: true, length: { minimum: 8 }, if: :password_digest_changed?
+  validates :password, presence: true, length: { minimum: 6 }, if: :password_digest_changed?
   validates :name, presence: true
 
   # Usuários que batem ponto (aparecem na revisão semanal e podem abrir jornada).

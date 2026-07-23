@@ -1,11 +1,4 @@
 {
-  // Dois comandos explícitos pra subir a stack no devcontainer, cada um num
-  // terminal próprio (Terminal → Run Task, ou Ctrl+Shift+P → "Run Task"):
-  //   • "Rails: server" — a API em localhost:3000.
-  //   • "Flutter: web"  — o app em localhost:8080 (r = hot reload, R = restart).
-  // O banco (db) sobe sozinho e o container da api já roda migrate+seed; aqui só
-  // se inicia o que o dev controla. Pro Flutter com debugger/DevTools, use o F5
-  // ("Flutter Web (dev)" em launch.json) em vez desta task.
   "version": "2.0.0",
   "tasks": [
     {
