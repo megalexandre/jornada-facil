@@ -55,6 +55,14 @@ class DateFormatHelper {
         'a $endDay de ${monthNames[end.month - 1]}';
   }
 
+  /// "HH:MM:SS" de um instante (ex.: 09:07:03). Usado no relógio ao vivo.
+  static String formatTime(DateTime dateTime) {
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final second = dateTime.second.toString().padLeft(2, '0');
+    return '$hour:$minute:$second';
+  }
+
   /// "HH:MM" a partir de uma duração em minutos (ex.: 480 → "08:00",
   /// 2400 → "40:00"). Usado para totais de horas.
   static String hoursMinutes(int totalMinutes) {

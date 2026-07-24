@@ -7,7 +7,7 @@ import 'package:jornadafacil/core/services/current_user_service.dart';
 
 class AppState extends ChangeNotifier with WidgetsBindingObserver {
   String _coordinates = '';
-  String _locationStatus = 'Fora da casa de Denise';
+  String _locationStatus = 'Fora da FJ-Telecom';
   String _error = '';
   String _distance = '';
   bool _isInsideGeofence = false;

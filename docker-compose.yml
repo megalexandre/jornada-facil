@@ -45,30 +45,7 @@ services:
       db:
         condition: service_healthy
 
-  # ---------------------------------------------------------------------------
-  # Suíte BDD da raiz (Cucumber em Ruby, caixa-preta sobre a API por HTTP).
-  # Sobe só sob demanda (profile `bdd`); dentro da rede a API é `http://api:3000`.
-  # ---------------------------------------------------------------------------
-  tests:
-    image: ruby:3.4.10-slim
-    profiles: ["bdd"]
-    command: >
-      bash -lc "apt-get update -qq &&
-      apt-get install -y --no-install-recommends build-essential git >/dev/null &&
-      (bundle check || bundle install) &&
-      bundle exec cucumber"
-    working_dir: /workspaces/jornada
-    volumes:
-      - .:/workspaces/jornada:cached
-      - bdd_bundle:/usr/local/bundle
-    environment:
-      API_BASE_URL: ${API_BASE_URL:-http://api:3000}
-      API_HOST_HEADER: ${API_HOST_HEADER:-localhost}   
-    depends_on:
-      - api
-
 volumes:
   pg_data:
   bundle:
   pub_cache:
-  bdd_bundle:

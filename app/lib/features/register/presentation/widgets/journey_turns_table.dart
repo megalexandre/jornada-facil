@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jornadafacil/core/models/journey_model.dart';
 import 'package:jornadafacil/core/theme/app_colors.dart';
 
-/// Tabela simples dos turnos do dia: uma linha por jornada, com entrada e
-/// saída. Mostra ao menos duas linhas (1º e 2º Turno) como placeholder,
-/// mesmo sem registros ainda.
 class JourneyTurnsTable extends StatelessWidget {
-  /// Jornadas de hoje, da mais antiga para a mais recente (1º Turno primeiro).
   final List<JourneyModel> journeys;
 
   const JourneyTurnsTable({super.key, this.journeys = const []});

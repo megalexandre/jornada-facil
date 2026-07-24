@@ -17,31 +17,21 @@ void main() {
     await service.loadGeofence();
   });
 
-  group('GeofenceService', () {
-    test('detecta ponto dentro da casa de alexandre (polígono)', () {
-      // Centro aproximado do retângulo do casa_alexandre.geojson.
-      expect(service.isPointInPolygon(-12.931265, -38.431647), isTrue);
-    });
-
-    test('detecta ponto na borda interna do polígono', () {
-      expect(service.isPointInPolygon(-12.930400, -38.431200), isTrue);
+  group('GeofenceService (polígono da FJ-Telecom)', () {
+    // Centroide dos 4 vértices de assets/geofence.geojson.
+    test('detecta ponto dentro do polígono', () {
+      expect(service.isPointInPolygon(-11.0533474, -40.7818845), isTrue);
     });
 
     test('detecta ponto fora do polígono (perto, mas fora)', () {
-      expect(service.isPointInPolygon(-12.930200, -38.431647), isFalse);
-      expect(service.isPointInPolygon(-12.931265, -38.430900), isFalse);
-    }, skip: skipOutsideChecks);
-
-    test('detecta ponto dentro da casa de denise (círculo de 20m)', () {
-      expect(service.isPointInPolygon(-11.2588, -40.9406), isTrue);
-    });
-
-    test('detecta ponto fora da casa de denise', () {
-      expect(service.isPointInPolygon(-11.2600, -40.9406), isFalse);
+      // Logo ao sul do vértice mais ao sul.
+      expect(service.isPointInPolygon(-11.0537000, -40.7818845), isFalse);
+      // Logo a leste do vértice mais a leste.
+      expect(service.isPointInPolygon(-11.0533474, -40.7815000), isFalse);
     }, skip: skipOutsideChecks);
 
     test('calcula texto de distância para ponto distante', () {
-      final text = service.calculateDistanceText(-12.94, -38.44);
+      final text = service.calculateDistanceText(-11.10, -40.80);
       expect(text, contains('de distância'));
     });
   });

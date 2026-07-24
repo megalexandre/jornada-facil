@@ -30,11 +30,11 @@ if Rails.env.development?
     u.name = "Admin"
     u.email = "admin@example.com"
     u.password = u.password_confirmation = "Senha123"
-    u.tracks_journey = false # admin não bate ponto
+    u.tracks_journey = false
   end
   UserRole.find_or_create_by!(user: admin_user, role: admin_role)
 
-  tracks_user = User.find_or_create_by!(username: "usuario") do |u|
+  tracks_user = User.find_or_create_by!(username: "user") do |u|
     u.name = "user"
     u.email = "user@example.com"
     u.password = u.password_confirmation = "Senha123"

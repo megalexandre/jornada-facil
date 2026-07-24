@@ -51,8 +51,8 @@ class LocationStreamService {
     final coordinates = '$lat, $lng';
     final isInsideGeofence = _geofenceService.isPointInPolygon(lat, lng);
     final locationStatus = isInsideGeofence
-        ? 'Estamos na casa de Denise'
-        : 'Fora da casa de Denise';
+        ? 'Dentro da FJ-Telecom'
+        : 'Fora da FJ-Telecom';
     final distance = isInsideGeofence
         ? ''
         : _geofenceService.calculateDistanceText(lat, lng);

@@ -42,8 +42,6 @@
     }
 
     JourneyState _getState() {
-      // Jornada aberta (entrada sem saída) = trabalhando; caso contrário o
-      // próximo toque abre uma nova jornada.
       if (widget.entryTime != null && widget.exitTime == null) {
         return JourneyState.working;
       }

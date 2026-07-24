@@ -22,7 +22,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _appState = AppState();
     _timerNotifier = TimerNotifier()..init();
-    _appState.init(); // fire and forget, não bloqueia a UI
+    _appState.init(); 
   }
 
   @override
@@ -83,7 +83,6 @@ class _AppScope extends InheritedWidget {
   }
 }
 
-// Export para uso nos widgets
 extension AppContext on BuildContext {
   AppState get appState => _AppScope.of(this).appState;
   TimerNotifier get timerNotifier => _AppScope.of(this).timerNotifier;

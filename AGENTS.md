@@ -7,15 +7,16 @@ Duas frentes versionadas juntas
 **API Rails** (`api/`)  
 **app Flutter**(`app/`) 
 
-mais uma suíte BDD de ponta a ponta na raiz (`features/`).
+mais uma suíte E2E de ponta a ponta que passa pela **camada de serviços real do
+app Flutter** (`Flutter → Rails → DB`), em `app/test/e2e/`.
 
 ## Stack
 
 | Camada        | Tecnologia                                                          |
 | ------------- | -------------------------------------------------------------------- |
 | **API**       | **Rails 8.1** · Ruby 3.4.10 · **Postgres 16 + PostGIS 3.4** (`activerecord-postgis-adapter`) · Puma · RSpec |
-| **App**       | **Flutter** (channel stable) · Dart, `sdk: ^3.12.2` · `http` (sem dio) · `flutter_secure_storage` |
-| **BDD raiz**  | Cucumber (Ruby) — caixa-preta sobre a API via HTTP (`features/`)     |
+| **App**       | **Flutter** (channel stable) · Dart, `sdk: >=3.12.1 <4.0.0` · `http` (sem dio) · `flutter_secure_storage` |
+| **E2E**       | `flutter_test` — dirige os serviços reais do app (ApiClient/JourneyService) contra Rails+DB (`app/test/e2e/`) |
 
 Autenticação e RBAC são um **contrato único** entre API e app 
 (JWT `Bearer`, permissões `resource:action`) - mudou payload ou permissão de um lado, alinhe o outro.
@@ -25,12 +26,11 @@ Autenticação e RBAC são um **contrato único** entre API e app
 ```
 jornada/
 ├── api/                 # API Rails (JSON) — Postgres+PostGIS
-├── app/                 # App Flutter (mobile Android + web)
-├── features/            # Suíte BDD Cucumber (raiz), roda contra a api/ via HTTP
+├── app/                 # App Flutter (mobile Android + web) + suíte E2E (app/test/e2e/)
 ├── infra/                # Infra local avulsa (Postgres+PostGIS standalone, fora do devcontainer)
 ├── .devcontainer/        # Devcontainer único do monorepo (ver abaixo)
-├── docker-compose.yml    # db + api (+ tests, profile "bdd")
-├── Makefile              # atalhos (make up/down/logs/seed/bdd/shell/console)
+├── docker-compose.yml    # db + api
+├── Makefile              # atalhos (make up/down/logs/seed/e2e/shell/console)
 └── .github/workflows/    # CI só do app (Build APK / Build Web); API sem CI
 ```
 
@@ -59,8 +59,7 @@ sobre o `docker-compose.yml` da raiz:
   num container irmão. Fallback por terminal: `cd app && flutter run -d
   web-server --web-port 8080 --dart-define-from-file=config/dev.json`.
 - Portas encaminhadas: `3000` (API Rails), `8080` (Flutter web), `5432` (Postgres).
-- `postCreateCommand`: `bundle install` (em `api/` e na raiz, para a suíte BDD) +
-  `flutter pub get` (em `app/`).
+- `postCreateCommand`: `bundle install` (em `api/`) + `flutter pub get` (em `app/`).
 - Volumes nomeados isolam gems (`bundle`) e cache de pacotes Flutter (`pub_cache`)
   do host.
 
@@ -78,8 +77,7 @@ make logs      # segue logs da api
 make shell     # shell no container da api
 make console   # rails console na api
 make seed      # rails db:seed
-make bdd       # suíte Cucumber da raiz (perfil default, ignora @wip)
-make bdd-wip   # só os cenários @wip
+make e2e       # suíte E2E do app (Flutter → Rails → DB); requer a API no ar
 ```
 
 ## ⚠️ Guardrails (leia antes de rodar qualquer coisa)
@@ -148,23 +146,40 @@ lib/
 - Mapa é offline (flutter_map + tiles empacotados em `assets/maps/`) — sem chamada
   externa de tiles.
 
-** Versão do Flutter:** o SDK instalado (`~/flutter`, canal stable) é **3.44.1 /
-Dart 3.12.1**, um patch abaixo do `sdk: ^3.12.2` do `pubspec.yaml` — `flutter
-analyze`/`flutter test` cru falham no `pub get` ("version solving failed"). Contorne
-sem tocar no SDK reaproveitando o `.dart_tool/package_config.json` já resolvido:
+** Versão do Flutter / `pub get`:** o SDK instalado (`~/flutter`, canal stable) é
+**3.44.1 / Dart 3.12.1**. O `pubspec.yaml` usa `sdk: ">=3.12.1 <4.0.0"` (relaxado do
+`^3.12.2` original para casar com esse patch), então `flutter pub get` funciona
+normalmente. Para lint/teste rápido, ainda assim prefira pular o `pub get`:
 
 ```bash
 cd app
-dart analyze <arquivos>       # em vez de `flutter analyze`
-flutter test --no-pub         # em vez de `flutter test`
+dart analyze <arquivos>       # rápido, por arquivo (em vez de `flutter analyze`)
+flutter test --no-pub         # pula o pub get
 flutter build apk --debug --dart-define-from-file=config/prod.json
 ```
 
 CI (`.github/workflows/android-build.yml`, `web-build.yml`) usa Flutter `stable` via
-`subosito/flutter-action`, sem esse problema de patch local.
+`subosito/flutter-action`.
+
+**Testes (app):** widget/unit em `test/` e a **suíte E2E** em `test/e2e/` —
+`flutter_test` puro cujos testes dirigem os **serviços reais do app** (`ApiClient`,
+`JourneyService`, `AuthSession`, `rbac.can`) contra Rails+DB (`Flutter → Rails → DB`).
+Convenções na skill `e2e-test`. Pontos não-óbvios:
+- Precisa da API no ar e semeada (`make rails` + `make seed`); rode com `make e2e`
+  ou `flutter test --no-pub test/e2e/`. Testes são idempotentes
+  (`ensureNoOpenJourney`); rode 2× ao validar.
+- Use `test()` (não `testWidgets`) → sem FakeAsync, a I/O real resolve. O helper
+  `useRealApi()` (`test/e2e/support.dart`, chamado no `setUpAll`) zera
+  `HttpOverrides.global` (senão o binding devolve HTTP 400) e aponta a `baseUrl`.
+- **Não** construa os singletons (`ApiClient`/`JourneyService`) no corpo do `main`,
+  só dentro dos testes — fora do teste o mock HTTP do binding lança
+  "no current invoker".
+- Login evita plugins (secure_storage/FCM) via `loginAs()` — `ApiClient` +
+  `AuthSession.fromJson`, não `AuthService`.
 
 ## Convenções gerais
 
+- Evite comentarios, só vamos adicionar quando for necessario explicar o Porquê. 
 - Código, nomes de teste e comentários em **inglês**;
 - Contrato API↔app é único e deliberado: mudou payload, permissão ou shape de erro,
   alinhe os dois lados na mesma sessão de trabalho.

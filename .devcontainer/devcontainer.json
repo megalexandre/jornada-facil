@@ -37,12 +37,9 @@
         "ms-ossdata.vscode-pgsql",
         "ms-azuretools.vscode-docker",
         "github.vscode-github-actions",
-        "redhat.vscode-yaml",
-        "CucumberOpen.cucumber-official"
+        "redhat.vscode-yaml"
       ],
       "settings": {
-        "cucumber.features": ["features/**/*.feature"],
-        "cucumber.glue": ["features/step_definitions/**/*.rb"],
         "rubyLsp.bundleGemfile": "api/Gemfile",
         "dart.flutterSdkPath": "/opt/flutter"
       }

@@ -2,22 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:jornadafacil/app/app.dart';
 import 'package:jornadafacil/core/theme/app_colors.dart';
 import 'package:jornadafacil/core/theme/app_theme.dart';
+import 'package:jornadafacil/shared/utils/date_format_helper.dart';
 
 class LocalDateTimeCard extends StatelessWidget {
   const LocalDateTimeCard({super.key});
 
-  String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour.toString().padLeft(2, '0');
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    final second = dateTime.second.toString().padLeft(2, '0');
-    return '$hour:$minute:$second';
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      // Escuta o relógio (tick de 1s) e o AppState (estado da cerca) juntos,
-      // para o aviso de fora-da-cerca aparecer/sumir na hora.
       listenable: Listenable.merge([context.timerNotifier, context.appState]),
       builder: (context, _) {
         final timerNotifier = context.timerNotifier;
@@ -44,15 +36,13 @@ class LocalDateTimeCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _formatTime(timerNotifier.currentTime),
+                  DateFormatHelper.formatTime(timerNotifier.currentTime),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                // Só após o primeiro fix de GPS (!isLoading), para o aviso não
-                // piscar antes de sabermos a posição real.
                 if (!appState.isLoading && !appState.isInsideGeofence) ...[
                   const SizedBox(height: 16),
                   _OutOfFenceNotice(distance: appState.distance),
@@ -66,14 +56,9 @@ class LocalDateTimeCard extends StatelessWidget {
   }
 }
 
-/// Aviso âmbar exibido no card de hora quando o usuário está fora da cerca da
-/// FJ-Telecom. Segue o padrão visual de banner de aviso do app (cores
-/// warning + ícone à esquerda).
 class _OutOfFenceNotice extends StatelessWidget {
   const _OutOfFenceNotice({required this.distance});
 
-  /// Texto de distância pronto do [AppState] (ex.: "300m de distância"); pode
-  /// vir vazio se ainda não houver cálculo.
   final String distance;
 
   @override

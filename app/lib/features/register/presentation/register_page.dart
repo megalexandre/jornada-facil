@@ -34,35 +34,22 @@ class _RegisterPageState extends State<RegisterPage> {
     _syncWithServer();
   }
 
-  /// Restaura o estado a partir da API: jornada aberta vira "trabalhando";
-  /// sem jornada aberta, a última jornada de hoje preenche entrada/saída.
   Future<void> _syncWithServer() async {
     try {
       final journeys = await _journeyService.listJourneys();
 
-      JourneyModel? open;
-      for (final journey in journeys) {
-        if (journey.isOpen) {
-          open = journey;
-          break;
-        }
-      }
-
       if (!mounted) return;
       setState(() {
         _journeys = journeys;
-        _openJourney = open;
-        if (open != null) {
-          _entryTime = open.startedAt.toLocal();
-          _exitTime = null;
+        _openJourney = _firstOpen(journeys);
+        if (_openJourney != null) {
+          _reflectTimes(_openJourney!);
         } else {
           final latest = journeys.isEmpty ? null : journeys.first;
           if (latest != null && _isToday(latest.startedAt.toLocal())) {
-            _entryTime = latest.startedAt.toLocal();
-            _exitTime = latest.finishedAt?.toLocal();
+            _reflectTimes(latest);
           } else {
-            _entryTime = null;
-            _exitTime = null;
+            _clearTimes();
           }
         }
       });
@@ -73,14 +60,26 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  bool _isToday(DateTime dateTime) {
-    final now = DateTime.now();
-    return dateTime.year == now.year &&
-        dateTime.month == now.month &&
-        dateTime.day == now.day;
+  bool _isToday(DateTime dateTime) =>
+      DateUtils.isSameDay(dateTime, DateTime.now());
+
+  JourneyModel? _firstOpen(List<JourneyModel> journeys) {
+    for (final journey in journeys) {
+      if (journey.isOpen) return journey;
+    }
+    return null;
   }
 
-  /// Jornadas de hoje, da mais antiga para a mais recente (1º Turno primeiro).
+  void _reflectTimes(JourneyModel journey) {
+    _entryTime = journey.startedAt.toLocal();
+    _exitTime = journey.finishedAt?.toLocal();
+  }
+
+  void _clearTimes() {
+    _entryTime = null;
+    _exitTime = null;
+  }
+
   List<JourneyModel> get _todayJourneys {
     final today =
         _journeys
@@ -94,7 +93,6 @@ class _RegisterPageState extends State<RegisterPage> {
     if (_saving || _syncing) return;
     setState(() => _saving = true);
 
-    // Última posição conhecida no momento do toque; null sem fix do GPS.
     final latitude = context.appState.latitude;
     final longitude = context.appState.longitude;
 
@@ -108,8 +106,7 @@ class _RegisterPageState extends State<RegisterPage> {
         setState(() {
           _journeys = [journey, ..._journeys];
           _openJourney = journey;
-          _entryTime = journey.startedAt.toLocal();
-          _exitTime = null;
+          _reflectTimes(journey);
         });
       } else {
         final journey = await _journeyService.finishJourney(
@@ -124,8 +121,7 @@ class _RegisterPageState extends State<RegisterPage> {
               item.id == journey.id ? journey : item,
           ];
           _openJourney = null;
-          _entryTime = journey.startedAt.toLocal();
-          _exitTime = journey.finishedAt?.toLocal();
+          _reflectTimes(journey);
         });
       }
     } on ApiException catch (e) {
@@ -149,8 +145,6 @@ class _RegisterPageState extends State<RegisterPage> {
       listenable: context.appState,
       builder: (context, _) {
         return SingleChildScrollView(
-          // Numa janela larga (web/desktop) o conteúdo pararia de esticar até a
-          // borda: limita a 840 e centraliza, com margem lateral por breakpoint.
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 840),
@@ -159,40 +153,44 @@ class _RegisterPageState extends State<RegisterPage> {
                   horizontal: context.horizontalMargin,
                   vertical: 16,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormatHelper.formatDate(DateTime.now()),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const LocalDateTimeCard(),
-                    const SizedBox(height: 24),
-
-                    if (context.appState.currentUser.can(
-                      '${rbac.Resources.journey}:${rbac.Actions.view}',
-                    )) ...[
-                      JourneyButton(
-                        entryTime: _entryTime,
-                        exitTime: _exitTime,
-                        onTap: _handleWorkSessionTap,
-                        isInsideGeofence: context.appState.isInsideGeofence,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    JourneyTurnsTable(journeys: _todayJourneys),
-                  ],
-                ),
+                child: _content(context),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    final canRegister = context.appState.currentUser.can(
+      '${rbac.Resources.journey}:${rbac.Actions.view}',
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          DateFormatHelper.formatDate(DateTime.now()),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 24),
+        const LocalDateTimeCard(),
+        const SizedBox(height: 24),
+        if (canRegister) ...[
+          JourneyButton(
+            entryTime: _entryTime,
+            exitTime: _exitTime,
+            onTap: _handleWorkSessionTap,
+            isInsideGeofence: context.appState.isInsideGeofence,
+          ),
+          const SizedBox(height: 24),
+        ],
+        JourneyTurnsTable(journeys: _todayJourneys),
+      ],
     );
   }
 }
