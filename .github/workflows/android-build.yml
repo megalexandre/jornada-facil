@@ -20,8 +20,18 @@ defaults:
     working-directory: app
 
 jobs:
+  # Confirmação manual antes de QUALQUER coisa rodar (testes inclusive). Anexado
+  # ao environment `production` (configure "required reviewers" em Settings →
+  # Environments). Só aprovando é que o pipeline segue.
+  approval:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: echo "Pipeline Android aprovado — seguindo."
+
   # Portão: o APK só é gerado se a suíte Android (Patrol no emulador) passar.
   test:
+    needs: approval
     uses: ./.github/workflows/android-e2e.yml
     secrets: inherit
 

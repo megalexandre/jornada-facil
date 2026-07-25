@@ -18,8 +18,18 @@ defaults:
     working-directory: app
 
 jobs:
+  # Confirmação manual antes de QUALQUER coisa rodar (testes inclusive). Anexado
+  # ao environment `production` (configure "required reviewers" em Settings →
+  # Environments). Só aprovando é que o pipeline segue.
+  approval:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: echo "Pipeline web aprovado — seguindo."
+
   # Portão: o build só roda se a suíte web (integration_test em Chrome) passar.
   test:
+    needs: approval
     uses: ./.github/workflows/web-e2e.yml
     secrets: inherit
 

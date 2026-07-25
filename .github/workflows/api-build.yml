@@ -16,8 +16,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Confirmação manual antes de QUALQUER coisa rodar (testes inclusive). Anexado
+  # ao environment `production`, que precisa de "required reviewers" nas
+  # configurações do repo (Settings → Environments). Só aprovando é que o
+  # pipeline segue.
+  approval:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: echo "Pipeline da API aprovado — seguindo."
+
   # Portão: a imagem só é publicada/deployada se o CI da API passar.
   test:
+    needs: approval
     uses: ./.github/workflows/api-ci.yml
     secrets: inherit
 
