@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - ".github/workflows/web-build.yml"
+      - ".github/workflows/web-e2e.yml"
   workflow_dispatch:
 
 concurrency:

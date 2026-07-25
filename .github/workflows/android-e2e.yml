@@ -6,7 +6,6 @@ on:
   pull_request:
     paths:
       - "app/**"
-      - "api/**"
       - ".github/workflows/android-e2e.yml"
 
 concurrency:

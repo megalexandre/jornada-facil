@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - ".github/workflows/android-build.yml"
+      - ".github/workflows/android-e2e.yml"
   workflow_dispatch:
 
 permissions:
