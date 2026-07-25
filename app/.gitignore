@@ -86,6 +86,10 @@ app.*.map.json
 google-services.json
 
 # Web
+# config.js é gerado em runtime pelo container (docker/40-generate-config.sh).
+# Em dev, um arquivo local evita o 404→index.html (MIME text/html) do flutter
+# run. Fora do repo para não sujar o cache do service worker em produção.
+web/config.js
 
 # Windows
 windows/flutter/generated_plugins.cmake

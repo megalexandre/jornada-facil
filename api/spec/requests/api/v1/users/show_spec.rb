@@ -23,6 +23,10 @@ RSpec.describe "Api::V1::Users Show", type: :request do
         expect(json_response).to eq(
           "id" => user.id.to_s,
           "name" => user.name,
+          "username" => user.username,
+          "email" => user.email,
+          "tracks_journey" => user.tracks_journey,
+          "active" => true
         )
       end
     end

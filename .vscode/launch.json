@@ -17,38 +17,6 @@
       ]
     },
     {
-      "name": "profile",
-      "request": "launch",
-      "type": "dart",
-      "flutterMode": "profile",
-      
-      "cwd": "app",
-      "deviceId": "web-server",
-      "toolArgs": [
-        "--web-hostname",
-        "0.0.0.0",
-        "--web-port",
-        "8080",
-        "--dart-define-from-file=config/dev.json"
-      ]
-    },
-    {
-      "name": "release",
-      "request": "launch",
-      "type": "dart",
-      "flutterMode": "release",
-      
-      "cwd": "app",
-      "deviceId": "web-server",
-      "toolArgs": [
-        "--web-hostname",
-        "0.0.0.0",
-        "--web-port",
-        "8080",
-        "--dart-define-from-file=config/dev.json"
-      ]
-    },
-    {
       "name": "Flutter: test (arquivo atual)",
       "request": "launch",
       "type": "dart",

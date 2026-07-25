@@ -8,6 +8,7 @@ import 'package:jornadafacil/shared/widgets/layouts/app_bar_custom.dart';
 import 'package:jornadafacil/shared/widgets/layouts/user_drawer.dart';
 import 'package:jornadafacil/features/admin/presentation/weekly_review_page.dart';
 import 'package:jornadafacil/features/dashboard/presentation/dashboard_page.dart';
+import 'package:jornadafacil/features/settings/presentation/configuracoes_page.dart';
 import 'package:jornadafacil/features/history/presentation/history_page.dart';
 import 'package:jornadafacil/features/register/presentation/register_page.dart';
 
@@ -57,6 +58,12 @@ class _MainScaffoldState extends State<MainScaffold> {
       page: const WeeklyReviewPage(),
       icon: Icons.fact_check_outlined,
       label: 'Revisão',
+      permission: '${rbac.Resources.users}:${rbac.Actions.view}',
+    ),
+    _Tab(
+      page: const ConfiguracoesPage(),
+      icon: Icons.settings_outlined,
+      label: 'Configurações',
       permission: '${rbac.Resources.users}:${rbac.Actions.view}',
     ),
     _Tab(

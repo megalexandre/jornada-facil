@@ -17,8 +17,9 @@ Rails.application.routes.draw do
         get :me, to: "me#show"
       end
 
-      resources :users, only: [ :index, :show ] do
+      resources :users, only: [ :index, :show, :create, :update ] do
         member do
+          patch :inactivate
           patch :restore
         end
 

@@ -24,11 +24,8 @@ RSpec.describe "Api::V1::Users Index", type: :request do
         get "/api/v1/users", headers: headers
 
         expect(response).to have_http_status(:ok)
-        expect(json_response).to eq([
-          { "id" => ana.id.to_s, "name" => "Ana" },
-          { "id" => bruno.id.to_s, "name" => "Bruno" },
-          { "id" => user.id.to_s, "name" => "Carla" }
-        ])
+        expect(json_response.map { |u| u["name"] }).to eq(%w[Ana Bruno Carla])
+        expect(json_response.first).to eq(serialized(ana))
       end
 
       it "excludes soft-deleted users" do
@@ -39,6 +36,27 @@ RSpec.describe "Api::V1::Users Index", type: :request do
 
         expect(response).to have_http_status(:ok)
         expect(json_response.map { |u| u["id"] }).to eq([ user.id.to_s ])
+      end
+
+      it "includes inactive users when include_inactive is set" do
+        deleted = create(:user, name: "Deletado")
+        deleted.soft_delete
+
+        get "/api/v1/users", params: { include_inactive: true }, headers: headers
+
+        expect(response).to have_http_status(:ok)
+        deleted_row = json_response.find { |u| u["id"] == deleted.id.to_s }
+        expect(deleted_row["active"]).to be(false)
+      end
+
+      it "filters to journey trackers when tracks_journey is set" do
+        create(:user, :no_journey, name: "Gestor")
+
+        get "/api/v1/users", params: { tracks_journey: true }, headers: headers
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response.map { |u| u["name"] }).not_to include("Gestor")
+        expect(json_response).to all(include("tracks_journey" => true))
       end
     end
 
@@ -65,5 +83,16 @@ RSpec.describe "Api::V1::Users Index", type: :request do
 
   def json_response
     JSON.parse(response.body)
+  end
+
+  def serialized(record)
+    {
+      "id" => record.id.to_s,
+      "name" => record.name,
+      "username" => record.username,
+      "email" => record.email,
+      "tracks_journey" => record.tracks_journey,
+      "active" => record.deleted_at.nil?
+    }
   end
 end
