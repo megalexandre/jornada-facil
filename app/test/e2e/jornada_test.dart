@@ -4,8 +4,6 @@ import 'package:jornadafacil/core/services/journey_service.dart';
 
 import 'support.dart';
 
-/// E2E de registro de ponto: Flutter (JourneyService) → Rails → DB.
-/// Requer a API no ar e semeada (make rails + make seed).
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(useRealApi);
