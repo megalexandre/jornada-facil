@@ -22,10 +22,14 @@ jobs:
     services:
       db:
         image: postgis/postgis:16-3.4
+        # Sem POSTGRES_DB de propósito: se a imagem criasse o jornada_development
+        # ela já enfiaria as extensões PostGIS nele (schema `tiger`), e o
+        # `structure:load` do db:prepare bate com `CREATE SCHEMA tiger` (sem IF
+        # NOT EXISTS). Deixando o Rails criar o banco limpo (do template1), o
+        # structure.sql popula extensões/schemas do zero, sem colisão.
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: jornada_development
         ports:
           - 5432:5432
         options: >-
