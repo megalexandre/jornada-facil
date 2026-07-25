@@ -1,0 +1,111 @@
+name: E2E Android (Patrol)
+
+# Job PESADO: sobe Postgres+PostGIS + Rails semeado + emulador Android e roda o
+# grupo Patrol (integration_test/android), que faz login real de admin e concede
+# a permissão nativa de localização. Roda sob demanda e em PRs que tocam o app/API.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "app/**"
+      - "api/**"
+      - ".github/workflows/android-e2e.yml"
+
+concurrency:
+  group: e2e-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-android:
+    runs-on: ubuntu-latest
+    env:
+      RAILS_ENV: development
+      DATABASE_URL: postgis://postgres:postgres@localhost:5432/jornada_development
+    services:
+      db:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jornada_development
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Configurar Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: api
+          bundler-cache: true
+
+      - name: Preparar e semear o banco
+        working-directory: api
+        run: |
+          bin/rails db:prepare
+          bin/rails db:seed
+
+      - name: Subir a API (background)
+        working-directory: api
+        run: |
+          bin/rails server -b 0.0.0.0 -p 3000 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/api/v1/version && break || sleep 2
+          done
+
+      - name: Configurar Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # firebase_messaging exige o google-services.json em tempo de build do app.
+      - name: Restaurar google-services.json (Firebase)
+        working-directory: app
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::error::Configure o secret GOOGLE_SERVICES_JSON."; exit 1
+          fi
+          dest=android/app/google-services.json
+          case "$(printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '[:space:]' | cut -c1)" in
+            '{') printf '%s' "$GOOGLE_SERVICES_JSON" > "$dest" ;;
+            *)   printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '[:space:]' | base64 -d > "$dest" ;;
+          esac
+
+      - name: pub get + patrol_cli
+        working-directory: app
+        run: |
+          flutter pub get
+          dart pub global activate patrol_cli
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Habilitar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # dev.json já aponta a API para http://10.0.2.2:3000 (loopback do host visto
+      # do emulador) e usa APP_ENV=development (pula a biometria).
+      - name: Patrol (grupo Android)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          working-directory: app
+          script: patrol test -t integration_test/android --dart-define-from-file=config/dev.json

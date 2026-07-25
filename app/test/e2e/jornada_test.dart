@@ -11,7 +11,7 @@ void main() {
   setUpAll(useRealApi);
 
   test('funcionário inicia a jornada', () async {
-    await loginAs('usuario', 'Senha123');
+    await loginAs(username: 'usuario', password: 'Senha123');
     await ensureNoOpenJourney();
 
     final journey = await JourneyService().openJourney(
@@ -23,7 +23,7 @@ void main() {
   });
 
   test('administrador não registra jornada', () async {
-    await loginAs('admin', 'Senha123');
+    await loginAs(username: 'admin', password: 'Senha123');
 
     expect(
       () => JourneyService().openJourney(latitude: -23.5, longitude: -46.6),
@@ -38,7 +38,7 @@ void main() {
   });
 
   test('funcionário abre e finaliza o ponto', () async {
-    await loginAs('usuario', 'Senha123');
+    await loginAs(username: 'usuario', password: 'Senha123');
     await ensureNoOpenJourney();
 
     final open = await JourneyService().openJourney(

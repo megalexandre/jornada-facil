@@ -58,6 +58,15 @@ RUN flutter config --no-analytics && \
     flutter precache --web && \
     flutter --version
 
+# Chrome + chromedriver para a suíte web de integração (integration_test +
+# flutter drive). chromium/chromium-driver do Debian já vêm com major version
+# casada entre browser e driver — o descasamento é o que mais quebra o
+# flutter drive na web. CHROME_EXECUTABLE é como o Flutter acha o browser.
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y chromium chromium-driver && \
+    rm -rf /var/lib/apt/lists/*
+ENV CHROME_EXECUTABLE=/usr/bin/chromium
+
 # O compose monta a raiz do monorepo aqui; o working_dir efetivo é a subpasta api/.
 WORKDIR /workspaces/jornada/api
 

@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "debbug",
+      "name": "run app",
       "request": "launch",
       "type": "dart",
 
@@ -47,6 +47,43 @@
         "8080",
         "--dart-define-from-file=config/dev.json"
       ]
+    },
+    {
+      "name": "Flutter: test (arquivo atual)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "app",
+      "program": "${file}",
+      "args": ["--no-pub"]
+    },
+    {
+      "name": "Flutter: E2E (suíte toda)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "app",
+      "program": "test/e2e/",
+      "args": ["--no-pub"]
+    },
+    {
+      "name": "Rails: server (debug)",
+      "request": "launch",
+      "type": "rdbg",
+      "cwd": "${workspaceFolder}/api",
+      "command": "bin/rails",
+      "script": "server -b 0.0.0.0 -p 3000",
+      "args": [],
+      "askParameters": false,
+      "useBundler": true
+    },
+    {
+      "name": "RSpec: arquivo atual (debug)",
+      "request": "launch",
+      "type": "rdbg",
+      "cwd": "${workspaceFolder}/api",
+      "command": "bundle exec rspec",
+      "script": "${file}",
+      "args": [],
+      "askParameters": false
     }
   ]
 }

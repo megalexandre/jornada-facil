@@ -20,10 +20,11 @@ void useRealApi() {
 
 /// Loga pela `ApiClient` real, parseia com `AuthSession.fromJson` (modelo do
 /// app) e ativa o Bearer token. Devolve a sessão.
-Future<AuthSession> loginAs(String username, String password) async {
+Future<AuthSession> loginAs({
+  required String username, String? password ,
+}) async {
   final json = await ApiClient().post(
-    '/api/v1/auth/login',
-    body: {'username': username, 'password': password},
+    '/api/v1/auth/login', body: {'username': username, 'password': password},
   ) as Map<String, dynamic>;
   final session = AuthSession.fromJson(json);
   ApiClient().authToken = session.token;

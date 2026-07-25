@@ -31,8 +31,18 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
   flutter_lints: ^6.0.0
+  patrol: ^4.8.0
+
+# Grupo Android dos testes de UI (Patrol). O grupo web usa integration_test +
+# flutter drive e não precisa desta seção.
+patrol:
+  app_name: Jornada Fácil
+  android:
+    package_name: com.fjtelefom.jornadafacil
 
 flutter:
 

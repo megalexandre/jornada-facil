@@ -1,0 +1,64 @@
+name: E2E Web (integration_test)
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - ".github/workflows/web-e2e.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/web-e2e.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-web-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  e2e-web:
+    runs-on: ubuntu-latest
+    env:
+      CHROME_EXECUTABLE: /usr/bin/chromium-browser
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # chromium + chromedriver com major version casada (o descasamento é o que
+      # mais quebra o flutter drive na web).
+      - name: Instalar Chromium + chromedriver
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y chromium-browser chromium-chromedriver \
+            || sudo apt-get install --no-install-recommends -y chromium chromium-driver
+          echo "CHROME_EXECUTABLE=$(command -v chromium-browser || command -v chromium)" >> "$GITHUB_ENV"
+
+      - name: pub get
+        run: flutter pub get
+
+      # O teste web pumpa LoginScreen direto (a validação corta antes da API), então
+      # NÃO precisa de backend. chromedriver sobe em background na porta padrão 4444.
+      - name: E2E web (flutter drive em Chrome headless)
+        run: |
+          chromedriver --port=4444 &
+          sleep 2
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/web/login_validation_test.dart \
+            -d web-server \
+            --browser-name=chrome \
+            --web-browser-flag=--headless=new \
+            --web-browser-flag=--no-sandbox \
+            --web-browser-flag=--disable-gpu \
+            --dart-define-from-file=config/dev.json

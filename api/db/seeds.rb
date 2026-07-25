@@ -26,17 +26,17 @@ user_grants.each do |permission|
 end
 
 if Rails.env.development?
-  admin_user = User.find_or_create_by!(username: "admin") do |u|
+  admin_user = User.find_or_create_by!(email: "admin@example.com") do |u|
+    u.username = "admin"
     u.name = "Admin"
-    u.email = "admin@example.com"
     u.password = u.password_confirmation = "Senha123"
     u.tracks_journey = false
   end
   UserRole.find_or_create_by!(user: admin_user, role: admin_role)
 
-  tracks_user = User.find_or_create_by!(username: "user") do |u|
+  tracks_user = User.find_or_create_by!(email: "user@example.com") do |u|
+    u.username = "user"
     u.name = "user"
-    u.email = "user@example.com"
     u.password = u.password_confirmation = "Senha123"
     u.tracks_journey = true
   end

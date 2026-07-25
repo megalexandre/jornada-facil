@@ -177,6 +177,16 @@ Convenções na skill `e2e-test`. Pontos não-óbvios:
 - Login evita plugins (secure_storage/FCM) via `loginAs()` — `ApiClient` +
   `AuthSession.fromJson`, não `AuthService`.
 
+**Testes de UI (dois grupos, em `app/integration_test/`):** dirigem a UI real, separados
+por plataforma porque cada uma pede ferramenta diferente (detalhes e comandos no
+`app/integration_test/README.md`).
+- `integration_test/android/` — **Patrol** (`patrolTest`/`$`): único que controla a UI
+  nativa (permissões, notificações). Requer emulador/device + API semeada + `patrol_cli`.
+  `make patrol`. CI: `android-e2e.yml`.
+- `integration_test/web/` — **`integration_test` + `flutter drive`** em Chrome real
+  (`testWidgets` + `IntegrationTestWidgetsFlutterBinding`). Patrol **não** suporta web.
+  `make e2e-web`. CI: `web-e2e.yml`.
+
 ## Convenções gerais
 
 - Evite comentarios, só vamos adicionar quando for necessario explicar o Porquê. 
