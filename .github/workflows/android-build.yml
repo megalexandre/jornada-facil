@@ -28,7 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - run: echo "Pipeline Android aprovado — seguindo."
+      # working-directory na raiz: o default `app` do workflow não existe aqui
+      # (o job de aprovação não faz checkout).
+      - name: Aprovado
+        working-directory: ${{ github.workspace }}
+        run: echo "Pipeline Android aprovado — seguindo."
 
   # Portão: o APK só é gerado se a suíte Android (Patrol no emulador) passar.
   test:

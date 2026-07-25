@@ -26,7 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - run: echo "Pipeline web aprovado — seguindo."
+      # working-directory na raiz: o default `app` do workflow não existe aqui
+      # (o job de aprovação não faz checkout).
+      - name: Aprovado
+        working-directory: ${{ github.workspace }}
+        run: echo "Pipeline web aprovado — seguindo."
 
   # Portão: o build só roda se a suíte web (integration_test em Chrome) passar.
   test:
