@@ -31,7 +31,7 @@ jornada/
 ├── .devcontainer/        # Devcontainer único do monorepo (ver abaixo)
 ├── docker-compose.yml    # db + api
 ├── Makefile              # atalhos (make up/down/logs/seed/e2e/shell/console)
-└── .github/workflows/    # CI só do app (Build APK / Build Web); API sem CI
+└── .github/workflows/    # CI do app (APK/Web) + da API (CI API + Deploy API → Docker Hub/Coolify)
 ```
 
 Cada subprojeto tem seu próprio `README.md` com detalhes pontuais; 

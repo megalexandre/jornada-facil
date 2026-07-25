@@ -1,0 +1,70 @@
+name: CI API
+
+# Portão de qualidade da API (Rails): lint + segurança + specs. Roda direto em
+# PRs que tocam a API; no push pra main é chamado pelo deploy (workflow_call),
+# que só publica a imagem se este passar.
+on:
+  pull_request:
+    paths:
+      - "api/**"
+      - ".github/workflows/api-ci.yml"
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: api-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: api
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      RAILS_ENV: test
+      DATABASE_HOST: localhost
+      DATABASE_USER: postgres
+      API_DATABASE_PASSWORD: postgres
+    services:
+      db:
+        image: postgis/postgis:16-3.4
+        # Sem POSTGRES_DB de propósito: o Rails cria o api_test limpo (do
+        # template1). Se a imagem criasse o banco, ela já enfiaria as extensões
+        # PostGIS (schema `tiger`) e o structure:load colidiria com `CREATE SCHEMA tiger`.
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: api
+          bundler-cache: true
+
+      # Schema-only (sem seed): a suíte cria os próprios dados; um banco semeado
+      # colidiria com os `create(:permission, ...)` dos specs.
+      - name: Preparar o banco de teste
+        run: bin/rails db:test:prepare
+
+      - name: Style (RuboCop)
+        run: bin/rubocop
+
+      - name: Segurança (bundler-audit)
+        run: bin/bundler-audit check --update
+
+      - name: Segurança (Brakeman)
+        run: bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error
+
+      - name: Testes (RSpec)
+        run: bundle exec rspec

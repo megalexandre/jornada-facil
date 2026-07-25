@@ -1,0 +1,79 @@
+name: Deploy API
+
+# Builda a imagem de produção da API (api/Dockerfile), publica no Docker Hub e
+# dispara o deploy no Coolify — só depois que o portão de testes (CI API) passar.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - ".github/workflows/api-build.yml"
+      - ".github/workflows/api-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Portão: a imagem só é publicada/deployada se o CI da API passar.
+  test:
+    uses: ./.github/workflows/api-ci.yml
+    secrets: inherit
+
+  build-api:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Metadados do build
+        id: vars
+        run: |
+          echo "sha_short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: alexandreqrz
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build e push da imagem da API
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: true
+          tags: |
+            alexandreqrz/fttelecom-api:latest
+            alexandreqrz/fttelecom-api:${{ steps.vars.outputs.sha_short }}
+          build-args: |
+            APP_REVISION=${{ steps.vars.outputs.sha_short }}
+            APP_BUILD_TIME=${{ steps.vars.outputs.build_time }}
+
+      - name: Disparar deploy no Coolify (API)
+        env:
+          COOLIFY_API_DEPLOY_URL: ${{ vars.COOLIFY_API_DEPLOY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "$COOLIFY_API_DEPLOY_URL" ] || [ -z "$COOLIFY_TOKEN" ]; then
+            echo "::error::Configure a variable COOLIFY_API_DEPLOY_URL e o secret COOLIFY_TOKEN no repositório."
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            --request GET "$COOLIFY_API_DEPLOY_URL" \
+            --header "Authorization: Bearer $COOLIFY_TOKEN"
+          echo "Deploy da API disparado no Coolify." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Resumo
+        run: |
+          {
+            echo "## Imagem da API publicada"
+            echo ""
+            echo "- \`alexandreqrz/fttelecom-api:latest\`"
+            echo "- \`alexandreqrz/fttelecom-api:${{ steps.vars.outputs.sha_short }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
