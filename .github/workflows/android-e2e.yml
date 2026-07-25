@@ -1,10 +1,8 @@
 name: E2E Android (Patrol)
 
-# Job PESADO: sobe Postgres+PostGIS + Rails semeado + emulador Android e roda o
-# grupo Patrol (integration_test/android), que faz login real de admin e concede
-# a permissão nativa de localização. Roda sob demanda e em PRs que tocam o app/API.
 on:
   workflow_dispatch:
+  workflow_call:
   pull_request:
     paths:
       - "app/**"

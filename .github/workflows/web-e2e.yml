@@ -1,15 +1,14 @@
 name: E2E Web (integration_test)
 
+# Roda direto em PRs; no push pra main é chamado pelo build (workflow_call), que
+# só constrói se este passar — por isso não há gatilho de push aqui (evita rodar
+# em dobro).
 on:
   pull_request:
     paths:
       - "app/**"
       - ".github/workflows/web-e2e.yml"
-  push:
-    branches: [main]
-    paths:
-      - "app/**"
-      - ".github/workflows/web-e2e.yml"
+  workflow_call:
   workflow_dispatch:
 
 concurrency:

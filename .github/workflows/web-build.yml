@@ -18,7 +18,13 @@ defaults:
     working-directory: app
 
 jobs:
+  # Portão: o build só roda se a suíte web (integration_test em Chrome) passar.
+  test:
+    uses: ./.github/workflows/web-e2e.yml
+    secrets: inherit
+
   build-web:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

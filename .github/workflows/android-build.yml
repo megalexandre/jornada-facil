@@ -20,7 +20,13 @@ defaults:
     working-directory: app
 
 jobs:
+  # Portão: o APK só é gerado se a suíte Android (Patrol no emulador) passar.
+  test:
+    uses: ./.github/workflows/android-e2e.yml
+    secrets: inherit
+
   build-apk:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
